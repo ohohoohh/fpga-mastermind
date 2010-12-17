@@ -377,10 +377,6 @@ wire			ltm_sda;
 wire			ltm_scen;
 wire 			ltm_3wirebusy_n;
 
-wire	[11:0] 	x_coord;
-wire	[11:0] 	y_coord;
-wire			new_coord;	
-wire	[2:0]	photo_cnt;
 // clock
 wire 			F_CLK;// flash read clock
 reg 	[31:0] 	div;
@@ -398,6 +394,24 @@ wire			sdram_write; // sdram write signal
 wire			DLY0;
 wire			DLY1;
 wire			DLY2;
+
+
+//=============================================================================
+// Onze Vars!!!!!!
+//=============================================================================
+wire	[11:0] 	x_coord;
+wire	[11:0] 	y_coord;
+wire			new_coord;	
+
+wire	[2:0]	rowCounter;
+wire	[2:0]	colValue01;
+wire	[2:0]	colValue02;
+wire	[2:0]	colValue03;
+wire	[2:0]	colValue04;
+wire	[2:0]	wPegs;
+wire	[2:0]	bPegs;
+
+
 //=============================================================================
 // Structural coding
 //=============================================================================
@@ -486,11 +500,17 @@ touch_detector ts 			(
 							oLEDG,
 							new_coord,
 							start,
-							photo_cnt
+							rowCounter,
+							colValue01,
+							colValue02,
+							colValue03,
+							colValue01,
+							wPegs,
+							bPegs,
 							);
 
 flash_to_sdram_controller 	u4	   (
-							.iPHOTO_NUM(photo_cnt),
+							.iPHOTO_NUM(0),
 							.iRST_n(DLY1),
 							.iF_CLK(F_CLK),
 							.FL_DQ(FLASH_DQ)  ,				
