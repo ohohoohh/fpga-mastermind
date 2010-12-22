@@ -1,5 +1,5 @@
 module touch_detector(clock, reset, oLEDR, x_coord, y_coord, oLEDG, new_coord, oStart, nrOfRows, 
-						Value01, Value02, Value03, Value04, WhitePegs, BlackPegs, next);
+						Value01, Value02, Value03, Value04, WhitePegs, BlackPegs);
 // TODO
 // - maak random functie --> DEZE WERKT NIET 100% zie eerste always
 // - pegs !!!!!
@@ -15,8 +15,8 @@ input new_coord;
 // --------------------------------------
 
 output oStart;
-output [17:0] oLEDR;	// 16 rode leds (zijn meer MOGELIJK DEBUG)
-output [7:0] oLEDG;		// 8 groene leds
+output 	[17:0] 	oLEDR;	// 16 rode leds (zijn meer MOGELIJK DEBUG)
+output 	[7:0] 	oLEDG;		// 8 groene leds
 
 output	[2:0]	nrOfRows;
 output	[2:0]	Value01;	// 0 = leeg, 1-6 zijn de kleuren
@@ -25,7 +25,6 @@ output	[2:0]	Value03;
 output	[2:0]	Value04;
 output	[2:0]	WhitePegs; // max 4
 output	[2:0]	BlackPegs;
-output 			next;
 
 // --------------------------------------
 
@@ -61,7 +60,6 @@ wire [18:0]	yPos;
 assign oLEDR = ledrs;
 assign oLEDG = led;
 assign oStart = start;
-assign next = nextRound;
 
 assign nrOfRows = rowCounter;
 assign Value01 = colValue01;
@@ -133,7 +131,6 @@ begin
 		start = 1;	
 		wPegs = 0;
 		bPegs = 0;
-		nextRound = 0;	
 		
 		if( xPos[18:7] > 0 && xPos[18:7] <=  96) begin							// EERSTE KOLOM
 			if( yPos[18:7] > (100 * rowCounter) && yPos[18:7] <=  (100 * (rowCounter + 1))) begin
@@ -216,8 +213,6 @@ begin
 				end
 				else
 				begin
-					led = 8'b00001111;
-					
 					if ((colValue01 != 0) && (colValue02 != 0) && (colValue03 != 0) && (colValue04 != 0))
 						calculate = 1;
 				end
@@ -241,12 +236,14 @@ begin
 			
 			rowCounter = rowCounter - 1;		// volgende rij wordt selecteerbaar
 			
+			led = 8'b00001111;
+			
+			// toch hier een bool voor next round en de rest hier onder pas zetten in het volgende deel
 			colValue01 = 0;
 			colValue02 = 0;
 			colValue03 = 0;
 			colValue04 = 0;
 			
-			nextRound = 1;
 		end
 	end
 end
