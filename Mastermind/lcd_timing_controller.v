@@ -54,6 +54,15 @@ module lcd_timing_controller		(
 						oLCD_R,				// LCD Red color data 
 						oLCD_G,             // LCD Green color data  
 						oLCD_B,             // LCD Blue color data  
+						// onze vars!!!!
+						oStart, 
+						nrOfRows, 
+						Value01, 
+						Value02, 
+						Value03, 
+						Value04, 
+						WhitePegs, 
+						BlackPegs
 						);
 //============================================================================
 // PARAMETER declarations
@@ -78,6 +87,18 @@ output  [7:0]	oLCD_B;
 output			oHD;
 output			oVD;
 output			oDEN;
+
+// onze vars!!!!!!!!!!!!!!!
+input oStart;
+input	[2:0]	nrOfRows;
+input	[2:0]	Value01;	// 0 = leeg, 1-6 zijn de kleuren
+input	[2:0]	Value02;
+input	[2:0]	Value03;
+input	[2:0]	Value04;
+input	[2:0]	WhitePegs; // max 4
+input	[2:0]	BlackPegs;
+
+						
 //=============================================================================
 // REG/WIRE declarations
 //=============================================================================
