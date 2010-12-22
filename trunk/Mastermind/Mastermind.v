@@ -410,7 +410,6 @@ wire	[2:0]	colValue03;
 wire	[2:0]	colValue04;
 wire	[2:0]	wPegs;
 wire	[2:0]	bPegs;
-wire 			nextRound;
 
 
 //=============================================================================
@@ -489,7 +488,7 @@ adc_spi_controller	u2		(
 							.iADC_PENIRQ_n(adc_penirq_n),
 							.oX_COORD(x_coord),
 							.oY_COORD(y_coord),
-							.oNEW_COORD(new_coord),
+							.oNEW_COORD(new_coord)
 							 );
 					 
 touch_detector ts 			(
@@ -507,8 +506,7 @@ touch_detector ts 			(
 							colValue03,
 							colValue01,
 							wPegs,
-							bPegs,
-							nextRound,
+							bPegs
 							);
 
 flash_to_sdram_controller 	u4	   (
@@ -525,7 +523,7 @@ flash_to_sdram_controller 	u4	   (
 							.oSDRAM_WRITE(sdram_write),
 							.oRED(sRED),
 							.oGREEN(sGREEN),
-							.oBLUE(sBLUE),
+							.oBLUE(sBLUE)
 							);
 
 SEG7_LUT_8 			u5		(	
@@ -554,9 +552,18 @@ lcd_timing_controller	u6  (
 							.oLCD_B(ltm_b), 
 							.oHD(ltm_hd),
 							.oVD(ltm_vd),
-							.oDEN(ltm_den)	
+							.oDEN(ltm_den),
+							// onze vars !!!!!!
+							.oStart(start),
+							.nrOfRows(rowCounter),
+							.Value01(colValue01),
+							.Value02(colValue02),
+							.Value03(colValue03),
+							.Value04(colValue01),
+							.WhitePegs(wPegs),
+							.BlackPegs(bPegs)
 							);
-							
+														
 //	SDRAM frame buffer
 Sdram_Control_4Port	u7	(	//	HOST Side
 						    .REF_CLK(iCLK_50),
@@ -610,7 +617,7 @@ Sdram_Control_4Port	u7	(	//	HOST Side
 				            .DQM({oDRAM0_UDQM1,oDRAM0_LDQM0}),
 							.SDR_CLK(oDRAM0_CLK),
 							.CLK_33(ltm_nclk)
-								);
+							);
 
 Reset_Delay			u8	   (.iCLK(iCLK_50),
 							.iRST(iKEY[0]),
