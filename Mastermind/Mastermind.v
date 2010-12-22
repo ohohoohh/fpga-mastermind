@@ -410,6 +410,7 @@ wire	[2:0]	colValue03;
 wire	[2:0]	colValue04;
 wire	[2:0]	wPegs;
 wire	[2:0]	bPegs;
+wire 			nextRound;
 
 
 //=============================================================================
@@ -507,6 +508,7 @@ touch_detector ts 			(
 							colValue01,
 							wPegs,
 							bPegs,
+							nextRound,
 							);
 
 flash_to_sdram_controller 	u4	   (
