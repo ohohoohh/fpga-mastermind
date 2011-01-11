@@ -1,10 +1,7 @@
 module touch_detector(clock, reset, oLEDR, x_coord, y_coord, oLEDG, new_coord, oStart, nrOfRows, 
 						Value01, Value02, Value03, Value04, WhitePegs, BlackPegs);
-// TODO
-// - maak random functie --> DEZE WERKT NIET 100% zie eerste always
-// - pegs !!!!!
-// - DEBUG MET LEDS
 
+parameter touch_delay = 10000000;
 
 input clock;
 input reset;
@@ -32,7 +29,7 @@ reg start;
 reg next = 0;
 reg firsttime = 1;
 reg calculate = 0;		// als deze 1 is dan berekenen (geset bij het aanraken van pegs)
-reg [24:0] counter = 2500000;
+reg [24:0] counter = 0;
 reg [24:0] calculateCounter = 0;
 
 reg	[2:0]	rowCounter;
@@ -76,7 +73,7 @@ assign BlackPegs = bPegs;
 
 // ========================================================
 
-always @(posedge clock)// or posedge reset)
+always @(posedge clock or negedge reset)// or posedge reset)
 begin
 	if(!reset) begin			// RESET
 		if (firsttime) begin
@@ -89,7 +86,7 @@ begin
 end		
 
 
-always @( posedge clock)
+always @( posedge clock or negedge reset)
 begin
 	if(!reset) begin			// RESET
 		start = 0;
@@ -121,22 +118,14 @@ begin
 		if (solution[11:9] == 0)
 			solution[11:9] = 1;
 		
-		
-		/*
-		//DEBUG
-		solution[2:0] = 1;
-		solution[5:3] = 2;
-		solution[8:6] = 4;
-		solution[11:9] = 6;
-		*/
-				
-		ledrs[2:0] = solution[2:0];
-		ledrs[5:3] = solution[5:3];
-		ledrs[8:6] = solution[8:6];
-		ledrs[11:9] = solution[11:9];
+		//LED OUTPUT ------------------------------------------
+		//ledrs[2:0] = solution[2:0];
+		//ledrs[5:3] = solution[5:3];
+		//ledrs[8:6] = solution[8:6];
+		//ledrs[11:9] = solution[11:9];
 
 	end
-	else if(!calculate) begin	
+	else if(!calculate && (led != 8'b11111111) ) begin	
 		start = 1;	
 		
 		xPos[18:0] = (x_coord * 16) - x_coord + 6'b100000;		// 6'b100000 = 0,5 voor juiste afronding
@@ -157,7 +146,7 @@ begin
 		
 			if( xPos[18:7] > 0 && xPos[18:7] <=  96) begin							// EERSTE KOLOM
 				if( yPos[18:7] > (100 * rowCounter) && yPos[18:7] <=  (100 * (rowCounter + 1))) begin
-					if(counter < 2500000)	// touch toggle
+					if(counter < touch_delay)	// touch toggle
 					begin
 						counter = counter + 1;
 					end
@@ -179,8 +168,8 @@ begin
 							
 						counter = 0;
 							
-						//DEBUG
-						//ledrs[2:0] = colValue[2:0];
+						//LED OUTPUT ------------------------------------------
+						ledrs[2:0] = colValue[2:0];
 					end
 									
 				end
@@ -188,7 +177,7 @@ begin
 			
 			if( xPos[18:7] > 96 && xPos[18:7] <=  192) begin						// TWEEDE KOLOM
 				if( yPos[18:7] > (100 * rowCounter) && yPos[18:7] <=  (100 * (rowCounter + 1))) begin
-					if(counter < 2500000)
+					if(counter < touch_delay)
 					begin
 						counter = counter + 1;
 					end
@@ -209,8 +198,8 @@ begin
 						
 						counter = 0;
 							
-						//DEBUG
-						//ledrs[5:3] = colValue[5:3];
+						//LED OUTPUT ------------------------------------------
+						ledrs[5:3] = colValue[5:3];
 					end
 									
 				end
@@ -218,7 +207,7 @@ begin
 			
 			if( xPos[18:7] > 192 && xPos[18:7] <=  288) begin						// DERDE KOLOM
 				if( yPos[18:7] > (100 * rowCounter) && yPos[18:7] <=  (100 * (rowCounter + 1))) begin
-					if(counter < 2500000)
+					if(counter < touch_delay)
 					begin
 						counter = counter + 1;
 					end
@@ -239,8 +228,8 @@ begin
 						
 						counter = 0;
 							
-						//DEBUG
-						//ledrs[8:6] = colValue[8:6];
+						//LED OUTPUT ------------------------------------------
+						ledrs[8:6] = colValue[8:6];
 					end
 									
 				end
@@ -248,7 +237,7 @@ begin
 			
 			if( xPos[18:7] > 288 && xPos[18:7] <=  384) begin						// VIERDE KOLOM
 				if( yPos[18:7] > (100 * rowCounter) && yPos[18:7] <=  (100 * (rowCounter + 1))) begin
-					if(counter < 2500000)
+					if(counter < touch_delay)
 					begin
 						counter = counter + 1;
 					end
@@ -269,8 +258,8 @@ begin
 							
 						counter = 0;
 						
-						//DEBUG
-						//ledrs[11:9] = colValue[11:9];
+						//LED OUTPUT ------------------------------------------
+						ledrs[11:9] = colValue[11:9];
 					end
 									
 				end
@@ -278,7 +267,7 @@ begin
 			
 			if( xPos[18:7] > 384 && xPos[18:7] <=  480) begin						// PEGS !!!!!
 				if( yPos[18:7] > (100 * rowCounter) && yPos[18:7] <=  (100 * (rowCounter + 1))) begin
-					if(counter < 2500000)
+					if(counter < touch_delay)
 					begin
 						counter = counter + 1;
 					end
@@ -360,17 +349,26 @@ begin
 				solutionCOPY = solutionCOPY >> 3;
 			end
 			
-			//DEBUG
-			ledrs[14:12] = wPegs;
-			ledrs[17:15] = bPegs;
+			//gewonnen
+			if (bPegs == 4) begin
+				led = 8'b11111111;
+			end
+			else begin
+				led = 8'b00001111;
+			end
+			
+			//LED OUTPUT ------------------------------------------
+			ledrs[14:12] = wPegs[2:0];
+			ledrs[17:15] = bPegs[2:0];
 			
 			// Reset booleans
 			calculateCounter = 0;
 			calculate = 0;
 			
 			// Zorg dat de codes een tijdje doorgegeven kunnen worden.
-			led = 8'b00001111;
-			next = 1;			
+			next = 1;		
+			
+			// HIEEEEEEEEEEEEEEEEEERZOOOOOOOOOOOOOOOOOOOOO YVESSSSSSSSSSSSSSSSSSSSSSSSSSSS !!!!!!	
 		end
 	end
 end
