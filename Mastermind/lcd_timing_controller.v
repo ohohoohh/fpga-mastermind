@@ -21,9 +21,7 @@ module lcd_timing_controller		(
 						rValue04, 
 						WhitePegs, 
 						BlackPegs,
-						//out
-						xPOS,
-						yPOS
+						nextRound
 						);
 //============================================================================
 // PARAMETER declarations
@@ -56,9 +54,6 @@ output			oVD;
 output			oDEN;
 
 // onze vars
-output [10:0] xPOS;
-output [9:0] yPOS;
-
 input oStart;
 input	[2:0]	nrOfRows;
 input	[2:0]	rValue01;	// 0 = leeg, 1-6 zijn de kleuren
@@ -67,6 +62,7 @@ input	[2:0]	rValue03;
 input	[2:0]	rValue04;
 input	[2:0]	WhitePegs; // max 4
 input	[2:0]	BlackPegs;
+input 	[1:0]	nextRound;
 
 reg [2:0] col = 0;
 reg [2:0] row = 0;
@@ -85,8 +81,13 @@ wire [2:0] currentValue; //huidige kleur in col/row
 reg [12:0] current_y_base;
 reg [12:0] current_x_base;
 
-assign xPOS = x_cnt;
-assign POS = y_cnt;
+//SPELBORD SAVED
+/*reg [2:0] rOneValue01;
+reg [2:0] rOneValue02;
+reg [2:0] rOneValue03;
+reg [2:0] rOneValue04;*/
+
+reg [83:0] boardState;
 
 						
 //=============================================================================
@@ -129,10 +130,130 @@ assign	read_red 	= display_area ? iREAD_DATA1[15:8] : 8'b0;
 assign	read_green 	= display_area ? iREAD_DATA1[7:0]: 8'b0;
 assign	read_blue 	= display_area ? iREAD_DATA2[7:0] : 8'b0;
 
-assign currentValue = (col == 0 ? rValue01[2:0] : 
-							(col == 1 ? rValue02[2:0] :
-									(col == 2 ? rValue03[2:0] :
-											(col == 3 ? rValue04[2:0] : 1'b0))));
+assign currentValue = 
+(
+	//huidige rij
+	row == nrOfRows ? 
+		(col == 0 ? 
+			rValue01[2:0] : 
+			(col == 1 ? 
+				rValue02[2:0] : 
+				(col == 2 ? 
+					rValue03[2:0] :	
+					(col == 3 ? 
+						rValue04[2:0] : 
+						1'b0
+					)
+				)
+			) 
+		) :
+	//oude & nieuwe rijen
+	(row == 1 ?
+		(col == 0 ? 
+			boardState[74:72] : 
+			(col == 1 ? 
+				boardState[77:75] : 
+				(col == 2 ? 
+					boardState[80:78] :	
+					(col == 3 ? 
+						boardState[83:81] : 
+						1'b0
+					)
+				)
+			) 
+		) :
+	(row == 2 ?
+		(col == 0 ? 
+			boardState[62:60] : 
+			(col == 1 ? 
+				boardState[65:63] : 
+				(col == 2 ? 
+					boardState[68:66] :	
+					(col == 3 ? 
+						boardState[71:69] : 
+						1'b0
+					)
+				)
+			) 
+		) :
+	(row == 3 ?
+		(col == 0 ? 
+			boardState[50:48] : 
+			(col == 1 ? 
+				boardState[53:51] : 
+				(col == 2 ? 
+					boardState[56:54] :	
+					(col == 3 ? 
+						boardState[59:57] : 
+						1'b0
+					)
+				)
+			) 
+		) :
+	(row == 4 ?
+		(col == 0 ? 
+			boardState[38:36] : 
+			(col == 1 ? 
+				boardState[41:39] : 
+				(col == 2 ? 
+					boardState[44:42] :	
+					(col == 3 ? 
+						boardState[47:45] : 
+						1'b0
+					)
+				)
+			) 
+		) :
+	(row == 5 ?
+		(col == 0 ? 
+			boardState[26:24] : 
+			(col == 1 ? 
+				boardState[29:27] : 
+				(col == 2 ? 
+					boardState[32:30] :	
+					(col == 3 ? 
+						boardState[35:33] : 
+						1'b0
+					)
+				)
+			) 
+		) :
+	(row == 6 ?
+		(col == 0 ? 
+			boardState[14:12] : 
+			(col == 1 ? 
+				boardState[17:15] : 
+				(col == 2 ? 
+					boardState[20:18] :	
+					(col == 3 ? 
+						boardState[23:21] : 
+						1'b0
+					)
+				)
+			) 
+		) :
+	(row == 7 ?
+		(col == 0 ? 
+			boardState[2:0] : 
+			(col == 1 ? 
+				boardState[5:3] : 
+				(col == 2 ? 
+					boardState[8:6] :	
+					(col == 3 ? 
+						boardState[11:9] : 
+						1'b0
+					)
+				)
+			) 
+		) : 1'b0
+	)
+	)
+	)
+	)
+	)	
+	)	
+	)
+);
 
 ///////////////////////// x  y counter  and lcd hd generator //////////////////
 always@(posedge iCLK or negedge iRST_n)
@@ -178,6 +299,10 @@ always@(posedge iCLK  or negedge iRST_n)
 			mvd  <= 1'b1;
 	end			
 
+
+
+
+//KLEUREN
 always@(posedge iCLK or negedge iRST_n)
 	begin
 		if (!iRST_n)
@@ -188,8 +313,6 @@ always@(posedge iCLK or negedge iRST_n)
 		end
 		else
 		begin
-			//currentValue = row; //TEST (WEGDOEN!!!!)
-		
 			//kleur aanpassen aan waarde
 			if (currentValue == 1) //RED
 			begin 
@@ -237,6 +360,70 @@ always@(posedge iCLK or negedge iRST_n)
 	end
 				
 
+//NEW ROUND
+always@(posedge iCLK or negedge iRST_n)
+	begin
+		if (!iRST_n)
+			begin
+				boardState = 84'd0;
+			end
+		else if (nextRound)
+			begin
+			if (nrOfRows == 7)
+				begin
+					boardState[2:0] = rValue01[2:0];
+					boardState[5:3] = rValue02[2:0];
+					boardState[8:6] = rValue03[2:0];
+					boardState[11:9] = rValue04[2:0];
+				end
+			else if (nrOfRows == 6)
+				begin
+					boardState[14:12] = rValue01[2:0];
+					boardState[17:15] = rValue02[2:0];
+					boardState[20:18] = rValue03[2:0];	
+					boardState[23:21] = rValue04[2:0];
+				end
+			else if (nrOfRows == 5)
+				begin
+					boardState[26:24] = rValue01[2:0];
+					boardState[29:27] = rValue02[2:0];
+					boardState[32:30] = rValue03[2:0];
+					boardState[35:33] = rValue04[2:0];
+				end
+			else if (nrOfRows == 4)
+				begin
+				
+					boardState[38:36] = rValue01[2:0]; 
+					boardState[41:39] = rValue02[2:0];
+					boardState[44:42] = rValue03[2:0];
+					boardState[47:45] = rValue04[2:0];
+				end
+			else if (nrOfRows == 3)
+				begin
+					boardState[50:48] = rValue01[2:0]; 
+					boardState[53:51] = rValue02[2:0]; 
+					boardState[56:54] = rValue03[2:0];
+					boardState[59:57] = rValue04[2:0];
+				end
+			else if (nrOfRows == 2)
+				begin
+					boardState[62:60] = rValue01[2:0];
+					boardState[65:63] = rValue02[2:0];
+					boardState[68:66] = rValue03[2:0];
+					boardState[71:69] = rValue04[2:0];
+				end
+			else if (nrOfRows == 1)
+				begin
+					boardState[74:72] = rValue01[2:0]; 
+					boardState[77:75] = rValue02[2:0]; 
+					boardState[80:78] = rValue03[2:0];	
+					boardState[83:81] = rValue04[2:0]; 
+				end
+			end
+	end
+	
+
+//UITTEKENEN
 always@(posedge iCLK or negedge iRST_n)
 	begin
 		if (!iRST_n)

@@ -411,6 +411,8 @@ wire	[2:0]	colValue04;
 wire	[2:0]	wPegs;
 wire	[2:0]	bPegs;
 
+wire	[1:0]	nextRound;
+
 wire [10:0] lcd_x;
 wire [9:0] lcd_y;
 
@@ -509,7 +511,34 @@ touch_detector ts 			(
 							colValue03,
 							colValue04,
 							wPegs,
-							bPegs
+							bPegs,
+							nextRound
+							);
+							
+lcd_timing_controller	u6  ( 
+							.iCLK(ltm_nclk),
+							.iRST_n(DLY2),
+							// sdram side
+							.iREAD_DATA1(Read_DATA1),
+							.iREAD_DATA2(Read_DATA2),
+							.oREAD_SDRAM_EN(mRead),
+							// lcd side
+							.oLCD_R(ltm_r),
+							.oLCD_G(ltm_g),
+							.oLCD_B(ltm_b), 
+							.oHD(ltm_hd),
+							.oVD(ltm_vd),
+							.oDEN(ltm_den),
+							// onze vars !!!!!!
+							.oStart(start),
+							.nrOfRows(rowCounter),
+							.rValue01(colValue01),
+							.rValue02(colValue02),
+							.rValue03(colValue03),
+							.rValue04(colValue04),
+							.WhitePegs(wPegs),
+							.BlackPegs(bPegs),
+							.nextRound(nextRound)
 							);
 
 flash_to_sdram_controller 	u4	   (
@@ -540,33 +569,6 @@ SEG7_LUT_8 			u5		(
 							.oSEG7(oHEX7_D),	
 							.iDIG({4'h0,x_coord,4'h0,y_coord}),
 							.ON_OFF(8'b01110111) 
-							);
-
-lcd_timing_controller	u6  ( 
-							.iCLK(ltm_nclk),
-							.iRST_n(DLY2),
-							// sdram side
-							.iREAD_DATA1(Read_DATA1),
-							.iREAD_DATA2(Read_DATA2),
-							.oREAD_SDRAM_EN(mRead),
-							// lcd side
-							.oLCD_R(ltm_r),
-							.oLCD_G(ltm_g),
-							.oLCD_B(ltm_b), 
-							.oHD(ltm_hd),
-							.oVD(ltm_vd),
-							.oDEN(ltm_den),
-							// onze vars !!!!!!
-							.oStart(start),
-							.nrOfRows(rowCounter),
-							.rValue01(colValue01),
-							.rValue02(colValue02),
-							.rValue03(colValue03),
-							.rValue04(colValue04),
-							.WhitePegs(wPegs),
-							.BlackPegs(bPegs),
-							.xPOS(lcd_x),
-							.yPOS(lcd_y)
 							);
 														
 //	SDRAM frame buffer
