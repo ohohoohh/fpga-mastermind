@@ -1,7 +1,7 @@
 module touch_detector(clock, reset, oLEDR, x_coord, y_coord, oLEDG, new_coord, oStart, nrOfRows, 
 						Value01, Value02, Value03, Value04, WhitePegs, BlackPegs);
 
-parameter touch_delay = 10000000;
+parameter touch_delay = 20000000;
 
 input clock;
 input reset;
@@ -52,8 +52,14 @@ reg [18:0]	yPos;
 reg [18:0]	xPosCOPY;
 reg [18:0]	yPosCOPY;
 
+wire [14:0] rowCoord;
+wire [14:0] rowCoordTop;
+
 
 // --------------------------------------
+
+assign rowCoord = (100 * rowCounter);
+assign rowCoordTop = (100 * (rowCounter + 1));
 
 assign oLEDR = ledrs;
 assign oLEDG = led;
@@ -88,7 +94,7 @@ end
 
 always @( posedge clock or negedge reset)
 begin
-	if(!reset) begin			// RESET
+	if (!reset) begin			// RESET
 		start = 0;
 		calculate = 0;
 		led = 8'b00000000;
@@ -144,15 +150,16 @@ begin
 			next = 0;
 		end
 		
+		if(counter < touch_delay)	// touch toggle
+			begin
+				counter = counter + 1;
+			end
+		else
+		begin
+			counter = 0;
 			if( xPos[18:7] > 0 && xPos[18:7] <=  96) begin							// EERSTE KOLOM
-				if( yPos[18:7] > (100 * rowCounter) && yPos[18:7] <=  (100 * (rowCounter + 1))) begin
-					if(counter < touch_delay)	// touch toggle
+				if( yPos[18:7] > rowCoord && yPos[18:7] <=  rowCoordTop) begin
 					begin
-						counter = counter + 1;
-					end
-					else
-					begin
-					
 						led = 8'b00000001;
 						
 						if (xPos != xPosCOPY || yPos != yPosCOPY) begin  // check vorige coord, als zelfde nog in zelfde press
@@ -164,10 +171,7 @@ begin
 							xPosCOPY <= xPos;
 							yPosCOPY <= yPos;
 							
-						end
-							
-						counter = 0;
-							
+						end							
 						//LED OUTPUT ------------------------------------------
 						ledrs[2:0] = colValue[2:0];
 					end
@@ -175,13 +179,8 @@ begin
 				end
 			end
 			
-			if( xPos[18:7] > 96 && xPos[18:7] <=  192) begin						// TWEEDE KOLOM
-				if( yPos[18:7] > (100 * rowCounter) && yPos[18:7] <=  (100 * (rowCounter + 1))) begin
-					if(counter < touch_delay)
-					begin
-						counter = counter + 1;
-					end
-					else
+			else if( xPos[18:7] > 96 && xPos[18:7] <=  192) begin						// TWEEDE KOLOM
+				if( yPos[18:7] > rowCoord && yPos[18:7] <=  rowCoordTop) begin
 					begin
 						led = 8'b00000010;
 						
@@ -195,8 +194,6 @@ begin
 							yPosCOPY <= yPos;
 							
 						end
-						
-						counter = 0;
 							
 						//LED OUTPUT ------------------------------------------
 						ledrs[5:3] = colValue[5:3];
@@ -205,13 +202,8 @@ begin
 				end
 			end
 			
-			if( xPos[18:7] > 192 && xPos[18:7] <=  288) begin						// DERDE KOLOM
-				if( yPos[18:7] > (100 * rowCounter) && yPos[18:7] <=  (100 * (rowCounter + 1))) begin
-					if(counter < touch_delay)
-					begin
-						counter = counter + 1;
-					end
-					else
+			else if( xPos[18:7] > 192 && xPos[18:7] <=  288) begin						// DERDE KOLOM
+				if( yPos[18:7] > rowCoord && yPos[18:7] <=  rowCoordTop) begin
 					begin
 						led = 8'b00000100;
 						
@@ -225,9 +217,6 @@ begin
 							yPosCOPY <= yPos;
 							
 						end
-						
-						counter = 0;
-							
 						//LED OUTPUT ------------------------------------------
 						ledrs[8:6] = colValue[8:6];
 					end
@@ -235,13 +224,8 @@ begin
 				end
 			end
 			
-			if( xPos[18:7] > 288 && xPos[18:7] <=  384) begin						// VIERDE KOLOM
-				if( yPos[18:7] > (100 * rowCounter) && yPos[18:7] <=  (100 * (rowCounter + 1))) begin
-					if(counter < touch_delay)
-					begin
-						counter = counter + 1;
-					end
-					else
+			else if( xPos[18:7] > 288 && xPos[18:7] <=  384) begin						// VIERDE KOLOM
+				if( yPos[18:7] > rowCoord && yPos[18:7] <=  rowCoordTop) begin
 					begin
 						led = 8'b00001000;
 						
@@ -256,8 +240,6 @@ begin
 							
 						end
 							
-						counter = 0;
-						
 						//LED OUTPUT ------------------------------------------
 						ledrs[11:9] = colValue[11:9];
 					end
@@ -265,22 +247,16 @@ begin
 				end
 			end
 			
-			if( xPos[18:7] > 384 && xPos[18:7] <=  480) begin						// PEGS !!!!!
-				if( yPos[18:7] > (100 * rowCounter) && yPos[18:7] <=  (100 * (rowCounter + 1))) begin
-					if(counter < touch_delay)
-					begin
-						counter = counter + 1;
-					end
-					else
+			else if( xPos[18:7] > 384 && xPos[18:7] <=  480) begin						// PEGS !!!!!
+				if( yPos[18:7] > rowCoord && yPos[18:7] <=  rowCoordTop) begin
 					begin  //led = 8'b00000000;
-						if ((colValue[2:0] != 0) && (colValue[2:0] != 0) && (colValue[2:0] != 0) && (colValue[2:0] != 0))
+						if ((colValue[2:0] != 0) && (colValue[5:3] != 0) && (colValue[8:6] != 0) && (colValue[11:9] != 0))
 							calculate = 1;
-						
-						counter = 0;
 					end
 									
 				end
 			end
+		end
 			
 	end // if(!calculate)
 	
@@ -320,13 +296,13 @@ begin
 					if ( i[1:0] == 2'b00 ) begin
 						activeNull[0] =0;
 					end 
-					if ( i[1:0] == 2'b01 ) begin
+					else if ( i[1:0] == 2'b01 ) begin
 						activeNull[1] = 0;
 					end 
-					if ( i[1:0] == 2'b10 ) begin
+					else if ( i[1:0] == 2'b10 ) begin
 						activeNull[2] = 0;
 					end 
-					if ( i[1:0] == 2'b11 ) begin
+					else if ( i[1:0] == 2'b11 ) begin
 						activeNull[3] = 0;
 					end 
 					
