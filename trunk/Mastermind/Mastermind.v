@@ -411,6 +411,9 @@ wire	[2:0]	colValue04;
 wire	[2:0]	wPegs;
 wire	[2:0]	bPegs;
 
+wire [10:0] lcd_x;
+wire [9:0] lcd_y;
+
 
 //=============================================================================
 // Structural coding
@@ -504,7 +507,7 @@ touch_detector ts 			(
 							colValue01,
 							colValue02,
 							colValue03,
-							colValue01,
+							colValue04,
 							wPegs,
 							bPegs
 							);
@@ -556,12 +559,14 @@ lcd_timing_controller	u6  (
 							// onze vars !!!!!!
 							.oStart(start),
 							.nrOfRows(rowCounter),
-							.Value01(colValue01),
-							.Value02(colValue02),
-							.Value03(colValue03),
-							.Value04(colValue01),
+							.rValue01(colValue01),
+							.rValue02(colValue02),
+							.rValue03(colValue03),
+							.rValue04(colValue04),
 							.WhitePegs(wPegs),
-							.BlackPegs(bPegs)
+							.BlackPegs(bPegs),
+							.xPOS(lcd_x),
+							.yPOS(lcd_y)
 							);
 														
 //	SDRAM frame buffer

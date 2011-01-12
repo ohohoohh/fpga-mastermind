@@ -1,45 +1,3 @@
-// --------------------------------------------------------------------
-// Copyright (c) 2005 by Terasic Technologies Inc. 
-// --------------------------------------------------------------------
-//
-// Permission:
-//
-//   Terasic grants permission to use and modify this code for use
-//   in synthesis for all Terasic Development Boards and Altera Development 
-//   Kits made by Terasic.  Other use of this code, including the selling 
-//   ,duplication, or modification of any portion is strictly prohibited.
-//
-// Disclaimer:
-//
-//   This VHDL/Verilog or C/C++ source code is intended as a design reference
-//   which illustrates how these types of functions can be implemented.
-//   It is the user's responsibility to verify their design for
-//   consistency and functionality through the use of formal
-//   verification methods.  Terasic provides no warranty regarding the use 
-//   or functionality of this code.
-//
-// --------------------------------------------------------------------
-//           
-//                     Terasic Technologies Inc
-//                     356 Fu-Shin E. Rd Sec. 1. JhuBei City,
-//                     HsinChu County, Taiwan
-//                     302
-//
-//                     web: http://www.terasic.com/
-//                     email: support@terasic.com
-//
-// --------------------------------------------------------------------
-//
-// Major Functions:	DE2 LTM module Timing control and output image data
-//					form sdram 
-//
-// --------------------------------------------------------------------
-//
-// Revision History :
-// --------------------------------------------------------------------
-//   Ver  :| Author            		:| Mod. Date :| Changes Made:
-//   V1.0 :| Johnny Fan				:| 07/06/30  :| Initial Revision
-// --------------------------------------------------------------------
 module lcd_timing_controller		(
 						iCLK, 				// LCD display clock
 						iRST_n, 			// systen reset
@@ -57,22 +15,31 @@ module lcd_timing_controller		(
 						// onze vars!!!!
 						oStart, 
 						nrOfRows, 
-						Value01, 
-						Value02, 
-						Value03, 
-						Value04, 
+						rValue01, 
+						rValue02, 
+						rValue03, 
+						rValue04, 
 						WhitePegs, 
-						BlackPegs
+						BlackPegs,
+						//out
+						xPOS,
+						yPOS
 						);
 //============================================================================
 // PARAMETER declarations
 //============================================================================
 parameter H_LINE = 1056;
-parameter V_LINE = 525;
 parameter Hsync_Blank = 216;
 parameter Hsync_Front_Porch = 40;
+
+parameter V_LINE = 525;
 parameter Vertical_Back_Porch = 35;
 parameter Vertical_Front_Porch = 10;
+//onze
+parameter y_base = 34;
+parameter x_base = 215;
+parameter y_offset = 97;
+parameter x_offset = 101;
 //===========================================================================
 // PORT declarations
 //===========================================================================
@@ -88,15 +55,38 @@ output			oHD;
 output			oVD;
 output			oDEN;
 
-// onze vars!!!!!!!!!!!!!!!
+// onze vars
+output [10:0] xPOS;
+output [9:0] yPOS;
+
 input oStart;
 input	[2:0]	nrOfRows;
-input	[2:0]	Value01;	// 0 = leeg, 1-6 zijn de kleuren
-input	[2:0]	Value02;
-input	[2:0]	Value03;
-input	[2:0]	Value04;
+input	[2:0]	rValue01;	// 0 = leeg, 1-6 zijn de kleuren
+input	[2:0]	rValue02;
+input	[2:0]	rValue03;
+input	[2:0]	rValue04;
 input	[2:0]	WhitePegs; // max 4
 input	[2:0]	BlackPegs;
+
+reg [2:0] col = 0;
+reg [2:0] row = 0;
+
+reg [2:0] colCount = 0;
+reg [2:0] rowCount = 0;
+reg [1:0] squareFound = 0;
+
+//kleur output
+reg [7:0] R_out;
+reg [7:0] G_out;
+reg [7:0] B_out;
+
+wire [2:0] currentValue; //huidige kleur in col/row
+
+reg [12:0] current_y_base;
+reg [12:0] current_x_base;
+
+assign xPOS = x_cnt;
+assign POS = y_cnt;
 
 						
 //=============================================================================
@@ -138,6 +128,11 @@ assign	display_area = ((x_cnt>(Hsync_Blank-1)&& //>215
 assign	read_red 	= display_area ? iREAD_DATA1[15:8] : 8'b0;
 assign	read_green 	= display_area ? iREAD_DATA1[7:0]: 8'b0;
 assign	read_blue 	= display_area ? iREAD_DATA2[7:0] : 8'b0;
+
+assign currentValue = (col == 0 ? rValue01[2:0] : 
+							(col == 1 ? rValue02[2:0] :
+									(col == 2 ? rValue03[2:0] :
+											(col == 3 ? rValue04[2:0] : 1'b0))));
 
 ///////////////////////// x  y counter  and lcd hd generator //////////////////
 always@(posedge iCLK or negedge iRST_n)
@@ -183,6 +178,64 @@ always@(posedge iCLK  or negedge iRST_n)
 			mvd  <= 1'b1;
 	end			
 
+always@(posedge iCLK or negedge iRST_n)
+	begin
+		if (!iRST_n)
+		begin
+			R_out = read_red;
+			G_out = read_green;
+			B_out = read_blue;
+		end
+		else
+		begin
+			//currentValue = row; //TEST (WEGDOEN!!!!)
+		
+			//kleur aanpassen aan waarde
+			if (currentValue == 1) //RED
+			begin 
+				R_out = 8'hff;
+				G_out = 8'h00;
+				B_out = 8'h00;
+			end 
+			else if (currentValue == 2) //GREEN
+			begin 
+				R_out = 8'h00;
+				G_out = 8'hff;
+				B_out = 8'h00;
+			end 
+			else if (currentValue == 3) //BLUE
+			begin 
+				R_out = 8'h00;
+				G_out = 8'h00;
+				B_out = 8'hff;
+			end 
+			else if (currentValue == 4) //ORANGE
+			begin 
+				R_out = 8'hff;
+				G_out = 8'ha5;
+				B_out = 8'h00;
+			end 
+			else if (currentValue == 5) //PURPLE
+			begin 
+				R_out = 8'h80;
+				G_out = 8'h00;
+				B_out = 8'h80;
+			end 
+			else if (currentValue == 6) //YELLOW
+			begin 
+				R_out = 8'hff;
+				G_out = 8'hff;
+				B_out = 8'h00;
+			end 
+			else //LEEG
+			begin 
+				R_out = read_red;
+				G_out = read_green;
+				B_out = read_blue;
+			end 
+		end
+	end
+				
 
 always@(posedge iCLK or negedge iRST_n)
 	begin
@@ -199,11 +252,39 @@ always@(posedge iCLK or negedge iRST_n)
 			begin
 				oHD	<= mhd;
 				oVD	<= mvd;
-				oDEN <= display_area;
-				oLCD_R <= read_red;
-				oLCD_G <= read_green;
-				oLCD_B <= read_blue;
-			end		
+				oDEN <= display_area;	
+				
+				//col en row bepalen
+				col = (y_cnt-y_base) / (y_offset-1);
+				row = (x_cnt-x_base) / (x_offset-1);
+			
+				//centrum van hokje
+				current_x_base = (x_base + (x_offset-1)*row)+50; //eerst 	nrOfRows
+				current_y_base = (y_base + (y_offset-1)*col)+48;
+				
+				if (col <= 3)
+				begin  
+					//CIRKEL !
+					if((x_cnt-current_x_base)*(x_cnt-current_x_base)+(y_cnt-current_y_base)*(y_cnt-current_y_base) <  1681) //41*41
+					begin	
+						oLCD_R <= R_out;
+						oLCD_G <= G_out;
+						oLCD_B <= B_out;
+					end		
+					else
+					begin
+						oLCD_R <= read_red;
+						oLCD_G <= read_green;
+						oLCD_B <= read_blue;
+					end
+				end
+				else //kleine pegs
+				begin
+					oLCD_R <= read_red;
+					oLCD_G <= read_green;
+					oLCD_B <= read_blue;
+				end		
+			end
 	end
 						
 endmodule
