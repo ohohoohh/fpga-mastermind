@@ -36,8 +36,8 @@ parameter Vertical_Front_Porch = 10;
 //onze
 parameter y_base = 34;
 parameter x_base = 215;
-parameter y_offset = 97;
-parameter x_offset = 101;
+parameter y_offset = 96;
+parameter x_offset = 100;
 //===========================================================================
 // PORT declarations
 //===========================================================================
@@ -62,7 +62,7 @@ input	[2:0]	rValue03;
 input	[2:0]	rValue04;
 input	[2:0]	WhitePegs; // max 4
 input	[2:0]	BlackPegs;
-input 	[1:0]	nextRound;
+input 			nextRound;
 
 reg [2:0] col = 0;
 reg [2:0] row = 0;
@@ -78,16 +78,25 @@ reg [7:0] B_out;
 
 wire [2:0] currentValue; //huidige kleur in col/row
 
-reg [12:0] current_y_base;
-reg [12:0] current_x_base;
+reg [12:0] current_y_center;
+reg [12:0] current_x_center;
+reg [12:0] current_x_center_small;
+reg [12:0] current_y_center_small;
 
-//SPELBORD SAVED
-/*reg [2:0] rOneValue01;
-reg [2:0] rOneValue02;
-reg [2:0] rOneValue03;
-reg [2:0] rOneValue04;*/
-
+//SPELBORD
 reg [83:0] boardState;
+reg [64:0] pegState;
+
+reg [2:0] whiteTemp;
+reg [2:0] blackTemp;
+
+reg [2:0] pegLoc;
+reg [2:0] pegColour;
+
+reg pegsSet = 0;
+
+reg pegCol;
+reg pegRow;
 
 						
 //=============================================================================
@@ -142,7 +151,12 @@ assign currentValue =
 					rValue03[2:0] :	
 					(col == 3 ? 
 						rValue04[2:0] : 
-						1'b0
+						(col == 4 ? 
+							(pegRow == 0 ?
+								(pegCol == 0 ? pegState[57:56] : pegState[59:58]) :
+								(pegCol == 0 ? pegState[61:60] : pegState[63:62])
+							) : 1'b0
+						)
 					)
 				)
 			) 
@@ -157,7 +171,12 @@ assign currentValue =
 					boardState[80:78] :	
 					(col == 3 ? 
 						boardState[83:81] : 
-						1'b0
+						(col == 4 ? 
+							(pegRow == 0 ?
+								(pegCol == 0 ? pegState[49:48] : pegState[51:50]) :
+								(pegCol == 0 ? pegState[53:52] : pegState[55:54])
+							) : 1'b0
+						)
 					)
 				)
 			) 
@@ -171,7 +190,12 @@ assign currentValue =
 					boardState[68:66] :	
 					(col == 3 ? 
 						boardState[71:69] : 
-						1'b0
+						(col == 4 ? 
+							(pegRow == 0 ?
+								(pegCol == 0 ? pegState[41:40] : pegState[43:42]) :
+								(pegCol == 0 ? pegState[45:44] : pegState[47:46])
+							) : 1'b0
+						)
 					)
 				)
 			) 
@@ -185,7 +209,12 @@ assign currentValue =
 					boardState[56:54] :	
 					(col == 3 ? 
 						boardState[59:57] : 
-						1'b0
+						(col == 4 ? 
+							(pegRow == 0 ?
+								(pegCol == 0 ? pegState[33:32] : pegState[35:34]) :
+								(pegCol == 0 ? pegState[37:36] : pegState[39:38])
+							) : 1'b0
+						)
 					)
 				)
 			) 
@@ -199,7 +228,12 @@ assign currentValue =
 					boardState[44:42] :	
 					(col == 3 ? 
 						boardState[47:45] : 
-						1'b0
+						(col == 4 ? 
+							(pegRow == 0 ?
+								(pegCol == 0 ? pegState[25:24] : pegState[27:26]) :
+								(pegCol == 0 ? pegState[29:28] : pegState[31:30])
+							) : 1'b0
+						)
 					)
 				)
 			) 
@@ -213,7 +247,12 @@ assign currentValue =
 					boardState[32:30] :	
 					(col == 3 ? 
 						boardState[35:33] : 
-						1'b0
+						(col == 4 ? 
+							(pegRow == 0 ?
+								(pegCol == 0 ? pegState[17:16] : pegState[19:18]) :
+								(pegCol == 0 ? pegState[21:20] : pegState[23:22])
+							) : 1'b0
+						)
 					)
 				)
 			) 
@@ -227,7 +266,12 @@ assign currentValue =
 					boardState[20:18] :	
 					(col == 3 ? 
 						boardState[23:21] : 
-						1'b0
+						(col == 4 ? 
+							(pegRow == 0 ?
+								(pegCol == 0 ? pegState[9:8] : pegState[11:10]) :
+								(pegCol == 0 ? pegState[13:12] : pegState[15:14])
+							) : 1'b0
+						)
 					)
 				)
 			) 
@@ -241,7 +285,12 @@ assign currentValue =
 					boardState[8:6] :	
 					(col == 3 ? 
 						boardState[11:9] : 
-						1'b0
+						(col == 4 ? 
+							(pegRow == 0 ?
+								(pegCol == 0 ? pegState[1:0] : pegState[3:2]) :
+								(pegCol == 0 ? pegState[5:4] : pegState[7:6])
+							) : 1'b0
+						)
 					)
 				)
 			) 
@@ -313,49 +362,73 @@ always@(posedge iCLK or negedge iRST_n)
 		end
 		else
 		begin
-			//kleur aanpassen aan waarde
-			if (currentValue == 1) //RED
-			begin 
-				R_out = 8'hff;
-				G_out = 8'h00;
-				B_out = 8'h00;
-			end 
-			else if (currentValue == 2) //GREEN
-			begin 
-				R_out = 8'h00;
-				G_out = 8'hff;
-				B_out = 8'h00;
-			end 
-			else if (currentValue == 3) //BLUE
-			begin 
-				R_out = 8'h00;
-				G_out = 8'h00;
-				B_out = 8'hff;
-			end 
-			else if (currentValue == 4) //ORANGE
-			begin 
-				R_out = 8'hff;
-				G_out = 8'ha5;
-				B_out = 8'h00;
-			end 
-			else if (currentValue == 5) //PURPLE
-			begin 
-				R_out = 8'h80;
-				G_out = 8'h00;
-				B_out = 8'h80;
-			end 
-			else if (currentValue == 6) //YELLOW
-			begin 
-				R_out = 8'hff;
-				G_out = 8'hff;
-				B_out = 8'h00;
-			end 
-			else //LEEG
-			begin 
-				R_out = read_red;
-				G_out = read_green;
-				B_out = read_blue;
-			end 
+			if (col != 4)
+			begin
+				//kleur aanpassen aan waarde
+				if (currentValue == 1) //RED
+				begin 
+					R_out = 8'hff;
+					G_out = 8'h00;
+					B_out = 8'h00;
+				end 
+				else if (currentValue == 2) //GREEN
+				begin 
+					R_out = 8'h00;
+					G_out = 8'hff;
+					B_out = 8'h00;
+				end 
+				else if (currentValue == 3) //BLUE
+				begin 
+					R_out = 8'h00;
+					G_out = 8'h00;
+					B_out = 8'hff;
+				end 
+				else if (currentValue == 4) //ORANGE
+				begin 
+					R_out = 8'hff;
+					G_out = 8'ha5;
+					B_out = 8'h00;
+				end 
+				else if (currentValue == 5) //PURPLE
+				begin 
+					R_out = 8'h80;
+					G_out = 8'h00;
+					B_out = 8'h80;
+				end 
+				else if (currentValue == 6) //YELLOW
+				begin 
+					R_out = 8'hff;
+					G_out = 8'hff;
+					B_out = 8'h00;
+				end 
+				else //LEEG
+				begin 
+					R_out = read_red;
+					G_out = read_green;
+					B_out = read_blue;
+				end 
+			end
+			else //kleine pegs
+			begin
+				if (currentValue == 1) //black
+				begin
+					R_out = 8'h00;
+					G_out = 8'h00;
+					B_out = 8'h00;
+				end
+				else if (currentValue == 2) //white
+				begin
+					R_out = 8'hff;
+					G_out = 8'hff;
+					B_out = 8'hff;
+				end
+				else //LEEG
+				begin 
+					R_out = read_red;
+					G_out = read_green;
+					B_out = read_blue;
+				end 
+			end
 		end
 	end
 				
@@ -366,15 +439,52 @@ always@(posedge iCLK or negedge iRST_n)
 		if (!iRST_n)
 			begin
 				boardState = 84'd0;
+				pegState = 63'd0;
+				pegsSet = 0;
 			end
 		else if (nextRound)
 			begin
+			//KLEINE PEGS locatie bepalen
+			if (pegsSet == 0)
+				begin
+					pegLoc = 0;
+					whiteTemp[2:0] = WhitePegs[2:0];
+					blackTemp[2:0] = BlackPegs[2:0];
+					pegsSet = 1;
+				end
+			
 			if (nrOfRows == 7)
 				begin
 					boardState[2:0] = rValue01[2:0];
 					boardState[5:3] = rValue02[2:0];
 					boardState[8:6] = rValue03[2:0];
 					boardState[11:9] = rValue04[2:0];
+											
+					if (pegLoc < 4)
+					begin 
+						if (blackTemp > 0)
+						begin
+							pegColour = 1;
+							blackTemp = blackTemp - 1;
+						end
+						else if (whiteTemp > 0)
+						begin
+							pegColour = 2;
+							whiteTemp = whiteTemp - 1;
+						end
+						else 
+							pegColour = 0;
+														
+						if (pegLoc == 0)
+							pegState[1:0] = pegColour;
+						else if (pegLoc == 1)
+							pegState[3:2] = pegColour;
+						else if (pegLoc == 2)
+							pegState[5:4] = pegColour;
+						else if (pegLoc == 3)
+							pegState[7:6] = pegColour;
+						pegLoc = pegLoc + 1;
+					end
 				end
 			else if (nrOfRows == 6)
 				begin
@@ -382,6 +492,32 @@ always@(posedge iCLK or negedge iRST_n)
 					boardState[17:15] = rValue02[2:0];
 					boardState[20:18] = rValue03[2:0];	
 					boardState[23:21] = rValue04[2:0];
+					
+					if (pegLoc < 4)
+					begin 
+						if (blackTemp > 0)
+						begin
+							pegColour = 1;
+							blackTemp = blackTemp - 1;
+						end
+						else if (whiteTemp > 0)
+						begin
+							pegColour = 2;
+							whiteTemp = whiteTemp - 1;
+						end
+						else 
+							pegColour = 0;
+	
+						if (pegLoc == 0)
+							pegState[9:8] = pegColour;
+						else if (pegLoc == 1)
+							pegState[11:10] = pegColour;
+						else if (pegLoc == 2)
+							pegState[13:12] = pegColour;
+						else if (pegLoc == 3)
+							pegState[15:14] = pegColour;
+						pegLoc = pegLoc + 1;
+					end
 				end
 			else if (nrOfRows == 5)
 				begin
@@ -389,6 +525,32 @@ always@(posedge iCLK or negedge iRST_n)
 					boardState[29:27] = rValue02[2:0];
 					boardState[32:30] = rValue03[2:0];
 					boardState[35:33] = rValue04[2:0];
+					
+					if (pegLoc < 4)
+					begin 
+						if (blackTemp > 0)
+						begin
+							pegColour = 1;
+							blackTemp = blackTemp - 1;
+						end
+						else if (whiteTemp > 0)
+						begin
+							pegColour = 2;
+							whiteTemp = whiteTemp - 1;
+						end
+						else 
+							pegColour = 0;
+				
+						if (pegLoc == 0)
+							pegState[17:16] = pegColour;
+						else if (pegLoc == 1)
+							pegState[19:18] = pegColour;
+						else if (pegLoc == 2)
+							pegState[21:20] = pegColour;
+						else if (pegLoc == 3)
+							pegState[23:22] = pegColour;
+						pegLoc = pegLoc + 1;
+					end
 				end
 			else if (nrOfRows == 4)
 				begin
@@ -397,6 +559,32 @@ always@(posedge iCLK or negedge iRST_n)
 					boardState[41:39] = rValue02[2:0];
 					boardState[44:42] = rValue03[2:0];
 					boardState[47:45] = rValue04[2:0];
+					
+					if (pegLoc < 4)
+					begin 
+						if (blackTemp > 0)
+						begin
+							pegColour = 1;
+							blackTemp = blackTemp - 1;
+						end
+						else if (whiteTemp > 0)
+						begin
+							pegColour = 2;
+							whiteTemp = whiteTemp - 1;
+						end
+						else 
+							pegColour = 0;
+					
+						if (pegLoc == 0)
+							pegState[25:24] = pegColour;
+						else if (pegLoc == 1)
+							pegState[27:26] = pegColour;
+						else if (pegLoc == 2)
+							pegState[29:28] = pegColour;
+						else if (pegLoc == 3)
+							pegState[31:30] = pegColour;
+						pegLoc = pegLoc + 1;
+					end
 				end
 			else if (nrOfRows == 3)
 				begin
@@ -404,6 +592,32 @@ always@(posedge iCLK or negedge iRST_n)
 					boardState[53:51] = rValue02[2:0]; 
 					boardState[56:54] = rValue03[2:0];
 					boardState[59:57] = rValue04[2:0];
+					
+					if (pegLoc < 4)
+					begin 
+						if (blackTemp > 0)
+						begin
+							pegColour = 1;
+							blackTemp = blackTemp - 1;
+						end
+						else if (whiteTemp > 0)
+						begin
+							pegColour = 2;
+							whiteTemp = whiteTemp - 1;
+						end
+						else 
+							pegColour = 0;
+					
+						if (pegLoc == 0)
+							pegState[33:32] = pegColour;
+						else if (pegLoc == 1)
+							pegState[35:34] = pegColour;
+						else if (pegLoc == 2)
+							pegState[37:36] = pegColour;
+						else if (pegLoc == 3)
+							pegState[39:38] = pegColour;
+						pegLoc = pegLoc + 1;
+					end
 				end
 			else if (nrOfRows == 2)
 				begin
@@ -411,6 +625,32 @@ always@(posedge iCLK or negedge iRST_n)
 					boardState[65:63] = rValue02[2:0];
 					boardState[68:66] = rValue03[2:0];
 					boardState[71:69] = rValue04[2:0];
+					
+					if (pegLoc < 4)
+					begin 
+						if (blackTemp > 0)
+						begin
+							pegColour = 1;
+							blackTemp = blackTemp - 1;
+						end
+						else if (whiteTemp > 0)
+						begin
+							pegColour = 2;
+							whiteTemp = whiteTemp - 1;
+						end
+						else 
+							pegColour = 0;
+						
+						if (pegLoc == 0)
+							pegState[41:40] = pegColour;
+						else if (pegLoc == 1)
+							pegState[43:42] = pegColour;
+						else if (pegLoc == 2)
+							pegState[45:44] = pegColour;
+						else if (pegLoc == 3)
+							pegState[47:46] = pegColour;
+						pegLoc = pegLoc + 1;
+					end
 				end
 			else if (nrOfRows == 1)
 				begin
@@ -418,8 +658,64 @@ always@(posedge iCLK or negedge iRST_n)
 					boardState[77:75] = rValue02[2:0]; 
 					boardState[80:78] = rValue03[2:0];	
 					boardState[83:81] = rValue04[2:0]; 
+					
+					if (pegLoc < 4)
+					begin 
+						if (blackTemp > 0)
+						begin
+							pegColour = 1;
+							blackTemp = blackTemp - 1;
+						end
+						else if (whiteTemp > 0)
+						begin
+							pegColour = 2;
+							whiteTemp = whiteTemp - 1;
+						end
+						else 
+							pegColour = 0;
+					
+						if (pegLoc == 0)
+							pegState[49:48] = pegColour;
+						else if (pegLoc == 1)
+							pegState[51:50] = pegColour;
+						else if (pegLoc == 2)
+							pegState[53:52] = pegColour;
+						else if (pegLoc == 3)
+							pegState[55:54] = pegColour;
+						pegLoc = pegLoc + 1;
+					end
 				end
-			end
+			else if (nrOfRows == 0)
+				begin
+					if (pegLoc < 4)
+					begin 
+						if (blackTemp > 0)
+						begin
+							pegColour = 1;
+							blackTemp = blackTemp - 1;
+						end
+						else if (whiteTemp > 0)
+						begin
+							pegColour = 2;
+							whiteTemp = whiteTemp - 1;
+						end
+						else 
+							pegColour = 0;
+				
+						if (pegLoc == 0)
+							pegState[57:56] = pegColour;
+						else if (pegLoc == 1)
+							pegState[59:58] = pegColour;
+						else if (pegLoc == 2)
+							pegState[61:60] = pegColour;
+						else if (pegLoc == 3)
+							pegState[63:62] = pegColour;
+						pegLoc = pegLoc + 1;
+					end
+				end
+		end
+		else
+			pegsSet = 0;
 	end
 	
 
@@ -442,17 +738,23 @@ always@(posedge iCLK or negedge iRST_n)
 				oDEN <= display_area;	
 				
 				//col en row bepalen
-				col = (y_cnt-y_base) / (y_offset-1);
-				row = (x_cnt-x_base) / (x_offset-1);
+				col = (y_cnt-y_base) / (y_offset);
+				row = (x_cnt-x_base) / (x_offset);
 			
-				//centrum van hokje
-				current_x_base = (x_base + (x_offset-1)*row)+50; //eerst 	nrOfRows
-				current_y_base = (y_base + (y_offset-1)*col)+48;
+				//centrum van hokje				
+				current_x_center = (x_base + (x_offset)*row)+50;
+				current_y_center = (y_base + (y_offset)*col)+48;
 				
+				pegCol = (y_cnt < current_y_center ? 0 : 1);
+				pegRow = (x_cnt < current_x_center ? 0 : 1);
+				
+				current_x_center_small = (pegCol == 0 ? current_x_center-25 : current_x_center+25);
+				current_y_center_small = (pegRow == 0 ? current_y_center-24 : current_y_center+24);			
+							
 				if (col <= 3)
-				begin  
+				begin  				
 					//CIRKEL !
-					if((x_cnt-current_x_base)*(x_cnt-current_x_base)+(y_cnt-current_y_base)*(y_cnt-current_y_base) <  1681) //41*41
+					if((x_cnt-current_x_center)*(x_cnt-current_x_center)+(y_cnt-current_y_center)*(y_cnt-current_y_center) <  1681) //41*41
 					begin	
 						oLCD_R <= R_out;
 						oLCD_G <= G_out;
@@ -467,9 +769,18 @@ always@(posedge iCLK or negedge iRST_n)
 				end
 				else //kleine pegs
 				begin
-					oLCD_R <= read_red;
-					oLCD_G <= read_green;
-					oLCD_B <= read_blue;
+					//if((x_cnt-current_x_center_small)*(x_cnt-current_x_center_small)+(y_cnt-current_y_center_small)*(y_cnt-current_y_center_small) < 169) //13*13
+					//begin	
+						oLCD_R <= R_out;
+						oLCD_G <= G_out;
+						oLCD_B <= B_out;
+					/*end
+					else
+					begin
+						oLCD_R <= read_red;
+						oLCD_G <= read_green;
+						oLCD_B <= read_blue;
+					end*/
 				end		
 			end
 	end
