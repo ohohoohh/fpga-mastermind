@@ -411,7 +411,7 @@ wire	[2:0]	colValue04;
 wire	[2:0]	wPegs;
 wire	[2:0]	bPegs;
 
-wire	[1:0]	nextRound;
+wire			nextRound;
 
 wire [10:0] lcd_x;
 wire [9:0] lcd_y;

@@ -22,7 +22,7 @@ output	[2:0]	Value03;
 output	[2:0]	Value04;
 output	[2:0]	WhitePegs; // max 4
 output	[2:0]	BlackPegs;
-output 	[1:0]	nextRound;
+output 			nextRound;
 
 // --------------------------------------
 
@@ -54,6 +54,8 @@ reg [18:0]	yPosCOPY;
 
 wire [14:0] rowCoord;
 wire [14:0] rowCoordTop;
+
+reg button = 0;
 
 
 // --------------------------------------
@@ -101,11 +103,11 @@ begin
 		calculateCounter = 0;
 		calculate = 0;
 		led = 8'b00000000;
-		ledrs = 17'b0;
+		ledrs = 18'b0;
 		xPosCOPY = 0;
 		yPosCOPY = 0;
 		
-		rowCounter = 7;         // moet vermindert w
+		rowCounter = 7;         // moet verminderd w
 		
 		colValue = 12'b0;
 		wPegs = 0;
@@ -128,13 +130,13 @@ begin
 			solution[11:9] = 1;
 		
 		//LED OUTPUT ------------------------------------------
-		//ledrs[2:0] = solution[2:0];
-		//ledrs[5:3] = solution[5:3];
-		//ledrs[8:6] = solution[8:6];
-		//ledrs[11:9] = solution[11:9];
+		ledrs[2:0] = solution[2:0];
+		ledrs[5:3] = solution[5:3];
+		ledrs[8:6] = solution[8:6];
+		ledrs[11:9] = solution[11:9];
 
 	end
-	else if(!calculate && (led != 8'b11111111) ) begin	
+	else if(!calculate ) begin	
 		start = 1;	
 		
 		xPos[18:0] = (x_coord * 16) - x_coord + 6'b100000;		// 6'b100000 = 0,5 voor juiste afronding
@@ -146,7 +148,7 @@ begin
 		
 		//nieuwe ronde
 		if (next == 1) begin 
-			if (rowCounter != 0) //als het spel  niet gedaan is
+			if (rowCounter != 0 && led != 8'b11111111) //als het spel  niet gedaan is
 			begin 
 				if(calculateCounter < 25000000) begin //zorg dat waarden even doorgegeven kunnen worden
 					calculateCounter = calculateCounter + 1;
@@ -156,8 +158,8 @@ begin
 					calculateCounter = 0;
 					rowCounter = rowCounter - 1;		// volgende rij wordt selecteerbaar
 					colValue = 12'b0;
-					wPegs = 0;
-					bPegs = 0;
+					wPegs = 3'b0;
+					bPegs = 3'b0;
 					next = 0;
 				end
 			end
@@ -166,18 +168,17 @@ begin
 		else 
 		begin
 			if(counter < touch_delay)	// touch toggle
-				begin
-					counter = counter + 1;
-				end
+				counter = counter + 1;
 			else
 			begin
 				counter = 0;
-				if( xPos[18:7] > 0 && xPos[18:7] <=  96) begin							// EERSTE KOLOM
-					if( yPos[18:7] > rowCoord && yPos[18:7] <=  rowCoordTop) begin
-						begin
+				if(yPos[18:7] > rowCoord && yPos[18:7] <=  rowCoordTop) //rij 
+				begin
+					if( xPos[18:7] > 0 && xPos[18:7] <=  96) 
+						begin							// EERSTE KOLOM
 							led = 8'b00000001;
-							
-							if (xPos != xPosCOPY || yPos != yPosCOPY) begin  // check vorige coord, als zelfde nog in zelfde press
+							if (xPos != xPosCOPY || yPos != yPosCOPY) 
+							begin  // check vorige coord, als zelfde nog in zelfde press
 		
 								colValue[2:0] = colValue[2:0] + 1; 		// ga nr volgende kleur (als > 6 terug nr eerste)
 								if (colValue[2:0] > 6)
@@ -185,91 +186,68 @@ begin
 									
 								xPosCOPY <= xPos;
 								yPosCOPY <= yPos;
-								
-							end							
+							end	
 							//LED OUTPUT ------------------------------------------
-							ledrs[2:0] = colValue[2:0];
+							//ledrs[2:0] = colValue[2:0];															
 						end
-										
-					end
-				end
-				
-				else if( xPos[18:7] > 96 && xPos[18:7] <=  192) begin						// TWEEDE KOLOM
-					if( yPos[18:7] > rowCoord && yPos[18:7] <=  rowCoordTop) begin
-						begin
+					
+					else if( xPos[18:7] > 96 && xPos[18:7] <=  192)
+						begin						// TWEEDE KOLOM			
 							led = 8'b00000010;
-							
-							if (xPos != xPosCOPY || yPos != yPosCOPY) begin
 						
-							colValue[5:3] = colValue[5:3] + 1;
-							if (colValue[5:3] > 6)
-								colValue[5:3] = 1;
+							if (xPos != xPosCOPY || yPos != yPosCOPY)
+							begin
+						
+								colValue[5:3] = colValue[5:3] + 1;
+								if (colValue[5:3] > 6)
+									colValue[5:3] = 1;
 							
 								xPosCOPY <= xPos;
 								yPosCOPY <= yPos;
-								
 							end
-								
 							//LED OUTPUT ------------------------------------------
-							ledrs[5:3] = colValue[5:3];
+							//ledrs[5:3] = colValue[5:3];
 						end
-										
-					end
-				end
-				
-				else if( xPos[18:7] > 192 && xPos[18:7] <=  288) begin						// DERDE KOLOM
-					if( yPos[18:7] > rowCoord && yPos[18:7] <=  rowCoordTop) begin
-						begin
+
+					else if( xPos[18:7] > 192 && xPos[18:7] <=  288) 
+						begin						// DERDE KOLOM
+
 							led = 8'b00000100;
 							
-							if (xPos != xPosCOPY || yPos != yPosCOPY) begin
-							
-							colValue[8:6] = colValue[8:6] + 1;
-							if (colValue[8:6] > 6)
-								colValue[8:6] = 1;
+							if (xPos != xPosCOPY || yPos != yPosCOPY)
+							begin
+								colValue[8:6] = colValue[8:6] + 1;
+								if (colValue[8:6] > 6)
+									colValue[8:6] = 1;
 								
 								xPosCOPY <= xPos;
-								yPosCOPY <= yPos;
-								
+								yPosCOPY <= yPos;	
 							end
 							//LED OUTPUT ------------------------------------------
-							ledrs[8:6] = colValue[8:6];
+							//ledrs[8:6] = colValue[8:6];
 						end
-										
-					end
-				end
-				
-				else if( xPos[18:7] > 288 && xPos[18:7] <=  384) begin						// VIERDE KOLOM
-					if( yPos[18:7] > rowCoord && yPos[18:7] <=  rowCoordTop) begin
-						begin
+						
+					else if( xPos[18:7] > 288 && xPos[18:7] <=  384) 
+						begin						// VIERDE KOLOM							
 							led = 8'b00001000;
-							
-							if (xPos != xPosCOPY || yPos != yPosCOPY) begin
-							
-							colValue[11:9] = colValue[11:9] + 1;
-							if (colValue[11:9] > 6)
-								colValue[11:9] = 1;
+
+							if (xPos != xPosCOPY || yPos != yPosCOPY) 
+							begin
+								colValue[11:9] = colValue[11:9] + 1;
+								if (colValue[11:9] > 6)
+									colValue[11:9] = 1;
 								
 								xPosCOPY <= xPos;
 								yPosCOPY <= yPos;
-								
 							end
-								
 							//LED OUTPUT ------------------------------------------
-							ledrs[11:9] = colValue[11:9];
+							//ledrs[11:9] = colValue[11:9];									
 						end
-										
-					end
-				end
-				
-				else if( xPos[18:7] > 384 && xPos[18:7] <=  480) begin						// PEGS !!!!!
-					if( yPos[18:7] > rowCoord && yPos[18:7] <=  rowCoordTop) begin
-						begin  //led = 8'b00000000;
-							if ((colValue[2:0] != 0) && (colValue[5:3] != 0) && (colValue[8:6] != 0) && (colValue[11:9] != 0))
-								calculate = 1;
-						end
-										
-					end
+						
+					else if( xPos[18:7] > 384 && xPos[18:7] <= 480)
+						if ((colValue[2:0] != 0) && (colValue[5:3] != 0) && (colValue[8:6] != 0) && (colValue[11:9] != 0))
+							calculate = 1;
+						
 				end
 			end
 		end	
@@ -327,8 +305,10 @@ begin
 		for (i = 0; i <= 3; i = i + 1) 
 		begin
 			if (solutionCOPY[2:0] == colValueCOPY[2:0]) begin
-				wPegs = wPegs -1;
-				bPegs = bPegs + 1;
+				if (wPegs != 0)
+					wPegs = wPegs - 1;
+				if (bPegs != 4)
+					bPegs = bPegs + 1;
 			end
 			colValueCOPY = colValueCOPY >> 3;
 			solutionCOPY = solutionCOPY >> 3;
@@ -336,10 +316,10 @@ begin
 		
 		//gewonnen
 		if (bPegs == 4) begin
-			led = 8'b11111111;
+			led[7:0] = 8'b11111111;
 		end
 		else begin
-			led = 8'b00001111;
+			led[7:0] = 8'b00001111;
 		end
 		
 		//LED OUTPUT ------------------------------------------
@@ -352,8 +332,6 @@ begin
 		
 		// Zorg dat de codes een tijdje doorgegeven kunnen worden.
 		next = 1;		
-		
-		// HIEEEEEEEEEEEEEEEEEERZOOOOOOOOOOOOOOOOOOOOO YVESSSSSSSSSSSSSSSSSSSSSSSSSSSS !!!!!!	
 	end
 end
 endmodule
