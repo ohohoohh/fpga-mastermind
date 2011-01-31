@@ -64,8 +64,8 @@ input	[2:0]	WhitePegs; // max 4
 input	[2:0]	BlackPegs;
 input 			nextRound;
 
-reg [2:0] col = 0;
-reg [2:0] row = 0;
+wire [2:0] col;
+wire [2:0] row;
 
 reg [2:0] colCount = 0;
 reg [2:0] rowCount = 0;
@@ -78,10 +78,10 @@ reg [7:0] B_out;
 
 wire [2:0] currentValue; //huidige kleur in col/row
 
-reg [12:0] current_y_center;
-reg [12:0] current_x_center;
-reg [12:0] current_x_center_small;
-reg [12:0] current_y_center_small;
+wire [12:0] current_y_center;
+wire [12:0] current_x_center;
+wire [12:0] current_x_center_small;
+wire [12:0] current_y_center_small;
 
 //SPELBORD
 reg [83:0] boardState;
@@ -95,8 +95,8 @@ reg [2:0] pegColour;
 
 reg pegsSet = 0;
 
-reg pegCol;
-reg pegRow;
+wire pegCol;
+wire pegRow;
 
 						
 //=============================================================================
@@ -138,6 +138,20 @@ assign	display_area = ((x_cnt>(Hsync_Blank-1)&& //>215
 assign	read_red 	= display_area ? iREAD_DATA1[15:8] : 8'b0;
 assign	read_green 	= display_area ? iREAD_DATA1[7:0]: 8'b0;
 assign	read_blue 	= display_area ? iREAD_DATA2[7:0] : 8'b0;
+
+//col en row bepalen
+assign col = (y_cnt-y_base) / (y_offset);
+assign row = (x_cnt-x_base) / (x_offset);
+
+//centrum van hokje
+assign current_x_center = (x_base + (x_offset)*row)+50;
+assign current_y_center = (y_base + (y_offset)*col)+48;
+
+assign pegCol = (y_cnt < current_y_center ? 0 : 1);
+assign pegRow = (x_cnt < current_x_center ? 0 : 1);
+
+assign current_x_center_small = (pegRow == 0 ? current_x_center-25 : current_x_center+25);
+assign current_y_center_small = (pegCol == 0 ? current_y_center-24 : current_y_center+24);
 
 assign currentValue = 
 (
@@ -367,38 +381,38 @@ always@(posedge iCLK or negedge iRST_n)
 				//kleur aanpassen aan waarde
 				if (currentValue == 1) //RED
 				begin 
-					R_out = 8'hff;
-					G_out = 8'h00;
-					B_out = 8'h00;
+					R_out = 8'hDE;
+					G_out = 8'h12;
+					B_out = 8'h12;
 				end 
 				else if (currentValue == 2) //GREEN
 				begin 
-					R_out = 8'h00;
-					G_out = 8'hff;
-					B_out = 8'h00;
+					R_out = 8'h56;
+					G_out = 8'hbf;
+					B_out = 8'h19;
 				end 
 				else if (currentValue == 3) //BLUE
-				begin 
-					R_out = 8'h00;
-					G_out = 8'h00;
-					B_out = 8'hff;
+				begin
+					R_out = 8'h1a;
+					G_out = 8'h66;
+					B_out = 8'hb8;
 				end 
 				else if (currentValue == 4) //ORANGE
 				begin 
-					R_out = 8'hff;
-					G_out = 8'ha5;
-					B_out = 8'h00;
+					R_out = 8'hf0;
+					G_out = 8'h9b;
+					B_out = 8'h24;
 				end 
 				else if (currentValue == 5) //PURPLE
 				begin 
-					R_out = 8'h80;
-					G_out = 8'h00;
-					B_out = 8'h80;
+					R_out = 8'h8b;
+					G_out = 8'h1a;
+					B_out = 8'hb8;
 				end 
 				else if (currentValue == 6) //YELLOW
 				begin 
 					R_out = 8'hff;
-					G_out = 8'hff;
+					G_out = 8'hEE;
 					B_out = 8'h00;
 				end 
 				else //LEEG
@@ -736,21 +750,7 @@ always@(posedge iCLK or negedge iRST_n)
 				oHD	<= mhd;
 				oVD	<= mvd;
 				oDEN <= display_area;	
-				
-				//col en row bepalen
-				col = (y_cnt-y_base) / (y_offset);
-				row = (x_cnt-x_base) / (x_offset);
-			
-				//centrum van hokje				
-				current_x_center = (x_base + (x_offset)*row)+50;
-				current_y_center = (y_base + (y_offset)*col)+48;
-				
-				pegCol = (y_cnt < current_y_center ? 0 : 1);
-				pegRow = (x_cnt < current_x_center ? 0 : 1);
-				
-				current_x_center_small = (pegCol == 0 ? current_x_center-25 : current_x_center+25);
-				current_y_center_small = (pegRow == 0 ? current_y_center-24 : current_y_center+24);			
-							
+	
 				if (col <= 3)
 				begin  				
 					//CIRKEL !
@@ -769,18 +769,18 @@ always@(posedge iCLK or negedge iRST_n)
 				end
 				else //kleine pegs
 				begin
-					//if((x_cnt-current_x_center_small)*(x_cnt-current_x_center_small)+(y_cnt-current_y_center_small)*(y_cnt-current_y_center_small) < 169) //13*13
-					//begin	
+					if((x_cnt-current_x_center_small)*(x_cnt-current_x_center_small)+(y_cnt-current_y_center_small)*(y_cnt-current_y_center_small) < 169) //13*13
+					begin	
 						oLCD_R <= R_out;
 						oLCD_G <= G_out;
 						oLCD_B <= B_out;
-					/*end
+					end
 					else
 					begin
 						oLCD_R <= read_red;
 						oLCD_G <= read_green;
 						oLCD_B <= read_blue;
-					end*/
+					end
 				end		
 			end
 	end
