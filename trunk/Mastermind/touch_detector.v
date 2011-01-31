@@ -28,6 +28,7 @@ output 			nextRound;
 
 reg start;
 reg next = 0;
+reg full = 0;
 reg firsttime = 1;
 reg calculate = 0;		// als deze 1 is dan berekenen (geset bij het aanraken van pegs)
 reg [24:0] counter = 0;
@@ -108,6 +109,7 @@ begin
 		yPosCOPY = 0;
 		
 		rowCounter = 7;         // moet verminderd w
+		full = 0;
 		
 		colValue = 12'b0;
 		wPegs = 0;
@@ -148,14 +150,16 @@ begin
 		
 		//nieuwe ronde
 		if (next == 1) begin 
-			if (rowCounter != 0 && led != 8'b11111111) //als het spel  niet gedaan is
-			begin 
-				if(calculateCounter < 25000000) begin //zorg dat waarden even doorgegeven kunnen worden
-					calculateCounter = calculateCounter + 1;
-				end
+			if(calculateCounter < 25000000) begin //zorg dat waarden even doorgegeven kunnen worden
+				calculateCounter = calculateCounter + 1;
+			end
+			else
+			begin	
+				calculateCounter = 0;
+				if (rowCounter == 0)
+					full = 1;
 				else
-				begin	
-					calculateCounter = 0;
+				begin
 					rowCounter = rowCounter - 1;		// volgende rij wordt selecteerbaar
 					colValue = 12'b0;
 					wPegs = 3'b0;
@@ -165,7 +169,7 @@ begin
 			end
 		end
 		//ronde bezig
-		else 
+		else if (full != 1 && led != 8'b11111111) //als het spel  niet gedaan is
 		begin
 			if(counter < touch_delay)	// touch toggle
 				counter = counter + 1;
