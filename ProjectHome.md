@@ -1,0 +1,1 @@
+University project: Mastermind game on the Cyclone II FPGA, written in Verilog, making use of the on board LCD screen.
